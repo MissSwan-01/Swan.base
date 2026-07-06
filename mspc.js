@@ -30,7 +30,7 @@ const scripts = [
   { name: 'Boyfriend Kiss', fn: runBoyfriendKiss, alwaysRun: true },
   { name: 'Guild Show', fn: runGuildShow, alwaysRun: true },
   { name: 'Pet Training', fn: runPetTraining, alwaysRun: false },
-  { name: 'Bridesmaids Tasks', fn: runBridesmaids, alwaysRun: false },
+  { name: 'Bridesmaids Tasks', fn: runBridesmaids, alwaysRun: true },
 ];
 
 (async () => {
@@ -79,6 +79,55 @@ const scripts = [
     }
   }
 
+  // 🎁 DAILY REWARD COLLECTION
+  if (loginSuccess) {
+    console.log(DIVIDER);
+    console.log("🎁 Starting daily reward collection...");
+    console.log("📡 Endpoint: /ajax/daily_rewards.php");
+    console.log("🔁 Will attempt dates 1 → 7");
+
+    for (let date = 1; date <= 7; date++) {
+      try {
+        console.log(`➡️ Sending daily reward request for date = ${date}...`);
+
+        const response = await page.evaluate(async (date) => {
+          const res = await fetch('https://v3.g.ladypopular.com/ajax/daily_rewards.php', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({
+              type: 'collectSevenDayReward',
+              date: date
+            }),
+            credentials: 'same-origin'
+          });
+
+          return await res.json();
+        }, date);
+
+        console.log(
+          `📦 Date ${date} → status=${response.status}` +
+          (response.message ? ` | message="${response.message}"` : '')
+        );
+
+        if (response.status === 1) {
+          console.log(`🎉 Daily reward successfully collected for date ${date}.`);
+          console.log("⛔ Future dates will be locked. Stopping further requests.");
+          break;
+        }
+
+        await page.waitForTimeout(500);
+      } catch (err) {
+        console.log(`❌ Daily reward request failed for date ${date}: ${err.message}`);
+      }
+    }
+
+    console.log("🎁 Daily reward collection block finished.");
+    console.log(DIVIDER);
+  }
+
   // ✅ RUN EACH SCRIPT
   for (const script of scripts) {
     const shouldRun =
@@ -91,7 +140,7 @@ const scripts = [
 
     console.log(`\n🚀 Starting: ${script.name}`);
     try {
-      await script.fn(page); // Call the script function with shared page
+      await script.fn(page);
       console.log(`✅ ${script.name} finished successfully.`);
       console.log(DIVIDER);
     } catch (err) {
@@ -104,11 +153,3 @@ const scripts = [
   await browser.close();
   console.log(`\n🎉 All scripts done. Browser closed.`);
 })();
-
-
-
-
-
-
-
-
