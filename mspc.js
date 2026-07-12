@@ -80,6 +80,7 @@ const scripts = [
   }
 
   // 🎁 DAILY REWARD COLLECTION
+  /* REMOVE THIS IF U WANT LATER
   if (loginSuccess) {
     console.log(DIVIDER);
     console.log("🎁 Starting daily reward collection...");
@@ -126,7 +127,7 @@ const scripts = [
 
     console.log("🎁 Daily reward collection block finished.");
     console.log(DIVIDER);
-  }
+  } */
 
   // ✅ RUN EACH SCRIPT
   for (const script of scripts) {
