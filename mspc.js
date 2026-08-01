@@ -30,7 +30,7 @@ const scripts = [
   { name: 'Boyfriend Kiss', fn: runBoyfriendKiss, alwaysRun: true },
   { name: 'Guild Show', fn: runGuildShow, alwaysRun: true },
   { name: 'Pet Training', fn: runPetTraining, alwaysRun: false },
-  { name: 'Bridesmaids Tasks', fn: runBridesmaids, alwaysRun: false },
+  { name: 'Bridesmaids Tasks', fn: runBridesmaids, alwaysRun: true },
 ];
 
 (async () => {
