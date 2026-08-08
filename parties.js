@@ -27,15 +27,36 @@ module.exports = async function runParties(page) {
 
   // ============================================================
   // STEP 2
-  // Check for an active party
+  // Check for an actual active engagement/wedding party
   // ============================================================
 
   console.log("\n🔎 STEP 2: Checking for an active party...");
 
-  const activeParty = await page.$('li.party-panel.active');
+  /*
+   * IMPORTANT:
+   *
+   * The Party Center also contains a bridesmaid entry like:
+   *
+   *   <li class="party-panel active brides">
+   *       ...
+   *       /party/center/planning.php?bridesmaid_party_id=7943
+   *
+   * That is NOT the party we want.
+   *
+   * The actual active party has a link like:
+   *
+   *   /party/engagement.php?party=11365
+   *
+   * Therefore we specifically look for a party link containing
+   * "?party=" instead of simply selecting ".party-panel.active".
+   */
 
-  if (!activeParty) {
-    console.log("🚫 No active party found.");
+  const activePartyLink = await page.$(
+    'li.party-panel.active:not(.brides) a[href*="/party/"][href*="?party="]'
+  );
+
+  if (!activePartyLink) {
+    console.log("🚫 No active engagement/wedding party found.");
     console.log("⏭️ No further party actions are needed.");
     console.log("🛑 Parties Script finished.");
     return;
@@ -44,28 +65,44 @@ module.exports = async function runParties(page) {
   console.log("🎉 Active party found!");
 
   // ------------------------------------------------------------
+  // Get the containing party panel
+  // ------------------------------------------------------------
+
+  const activeParty = await activePartyLink.evaluate(el => {
+    const panel = el.closest('li.party-panel');
+    return panel ? panel.outerHTML : null;
+  });
+
+  // ------------------------------------------------------------
   // Get party owner/name
   // ------------------------------------------------------------
 
-  const partyOwnerName = await activeParty
-    .$eval(
-      'h1.party-owners-names a.party-owners-names-link',
-      el => el.textContent.trim()
-    )
-    .catch(() => null);
+  let partyOwnerName = null;
+
+  try {
+    partyOwnerName = await activePartyLink.evaluate(el => {
+      const panel = el.closest('li.party-panel');
+
+      const ownerLink = panel?.querySelector(
+        'h1.party-owners-names a.party-owners-names-link'
+      );
+
+      return ownerLink
+        ? ownerLink.textContent.trim()
+        : null;
+    });
+  } catch (error) {
+    console.log("⚠️ Could not extract party owner/name.");
+  }
 
   // ------------------------------------------------------------
-  // Get party URL strip
+  // Get party URL
+  //
   // Example:
-  // /party/engagement.php?party=11463
+  // /party/engagement.php?party=11365
   // ------------------------------------------------------------
 
-  const partyUrlStrip = await activeParty
-    .$eval(
-      'div.buttons-wrap a.gradient.gradient-oval',
-      el => el.getAttribute('href')
-    )
-    .catch(() => null);
+  const partyUrlStrip = await activePartyLink.getAttribute('href');
 
   if (!partyUrlStrip) {
     console.log("❌ Active party found, but party URL could not be extracted.");
@@ -100,7 +137,10 @@ module.exports = async function runParties(page) {
   // Navigate to party page
   // ============================================================
 
-  const partyFullUrl = BASE_URL + partyUrlStrip;
+  const partyFullUrl = new URL(
+    partyUrlStrip,
+    BASE_URL
+  ).href;
 
   console.log("\n📍 STEP 3: Opening active party page...");
   console.log("🌐 Full party URL: " + partyFullUrl);
@@ -126,7 +166,8 @@ module.exports = async function runParties(page) {
       const response = await fetch('/ajax/party/party.php', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'Content-Type':
+            'application/x-www-form-urlencoded; charset=UTF-8',
           'X-Requested-With': 'XMLHttpRequest'
         },
         credentials: 'same-origin',
@@ -158,8 +199,13 @@ module.exports = async function runParties(page) {
     console.log("📡 HTTP status: " + bonusResponse.status);
     console.log("📡 Request successful: " + bonusResponse.ok);
 
-    if (bonusResponse.data && bonusResponse.data.status === 1) {
-      console.log("✅ Party attendance bonus collected successfully!");
+    if (
+      bonusResponse.data &&
+      bonusResponse.data.status === 1
+    ) {
+      console.log(
+        "✅ Party attendance bonus collected successfully!"
+      );
 
       if (
         bonusResponse.data.bonus &&
@@ -171,12 +217,20 @@ module.exports = async function runParties(page) {
         );
       }
     } else {
-      console.log("⚠️ Party bonus request returned a non-success status.");
+      console.log(
+        "⚠️ Party bonus request returned a non-success status."
+      );
+
       console.log("📦 Server response:");
-      console.log(JSON.stringify(bonusResponse.data, null, 2));
+      console.log(
+        JSON.stringify(bonusResponse.data, null, 2)
+      );
     }
   } catch (error) {
-    console.log("❌ Error while collecting party bonus: " + error.message);
+    console.log(
+      "❌ Error while collecting party bonus: " +
+      error.message
+    );
   }
 
   // ============================================================
@@ -185,7 +239,9 @@ module.exports = async function runParties(page) {
   // ============================================================
 
   console.log("\n📍 STEP 5: Refreshing party page...");
-  console.log("🔄 Reloading so we can inspect completed quests...");
+  console.log(
+    "🔄 Reloading so we can inspect completed quests..."
+  );
 
   await page.reload({
     waitUntil: 'domcontentloaded',
@@ -203,7 +259,9 @@ module.exports = async function runParties(page) {
       const ids = new Set();
 
       for (const element of elements) {
-        const match = element.id.match(/^completed-quest-(\d+)$/);
+        const match = element.id.match(
+          /^completed-quest-(\d+)$/
+        );
 
         if (match) {
           ids.add(match[1]);
@@ -216,7 +274,10 @@ module.exports = async function runParties(page) {
 
   const quest_data_id = new Set(completedQuestIds);
 
-  console.log("📋 Completed quest count: " + quest_data_id.size);
+  console.log(
+    "📋 Completed quest count: " +
+    quest_data_id.size
+  );
 
   if (quest_data_id.size === 0) {
     console.log("ℹ️ No completed quests found.");
@@ -239,40 +300,75 @@ module.exports = async function runParties(page) {
     return;
   }
 
-  console.log("\n📍 STEP 6: Collecting completed quest rewards...");
-  console.log("🎁 Total rewards to collect: " + quest_data_id.size);
-  console.log("🆔 Party ID being used: " + partyId);
+  console.log(
+    "\n📍 STEP 6: Collecting completed quest rewards..."
+  );
+
+  console.log(
+    "🎁 Total rewards to collect: " +
+    quest_data_id.size
+  );
+
+  console.log(
+    "🆔 Party ID being used: " +
+    partyId
+  );
 
   let successfulRewards = 0;
   let failedRewards = 0;
 
   for (const questId of quest_data_id) {
-    console.log("\n────────────────────────────────");
-    console.log("🎁 Collecting reward for quest: " + questId);
-    console.log("────────────────────────────────");
+    console.log(
+      "\n────────────────────────────────"
+    );
+
+    console.log(
+      "🎁 Collecting reward for quest: " +
+      questId
+    );
+
+    console.log(
+      "────────────────────────────────"
+    );
 
     console.log("📡 Request payload:");
-    console.log("   type          = takePartyQuestReward");
-    console.log("   party         = " + partyId);
-    console.log("   quest_data_id = " + questId);
+    console.log(
+      "   type          = takePartyQuestReward"
+    );
+
+    console.log(
+      "   party         = " +
+      partyId
+    );
+
+    console.log(
+      "   quest_data_id = " +
+      questId
+    );
 
     try {
       const rewardResponse = await page.evaluate(
         async function(data) {
-          const response = await fetch('/ajax/party/party.php', {
-            method: 'POST',
-            headers: {
-              'Content-Type':
-                'application/x-www-form-urlencoded; charset=UTF-8',
-              'X-Requested-With': 'XMLHttpRequest'
-            },
-            credentials: 'same-origin',
-            body: new URLSearchParams({
-              type: 'takePartyQuestReward',
-              party: data.partyId,
-              quest_data_id: data.questId
-            })
-          });
+          const response = await fetch(
+            '/ajax/party/party.php',
+            {
+              method: 'POST',
+
+              headers: {
+                'Content-Type':
+                  'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+              },
+
+              credentials: 'same-origin',
+
+              body: new URLSearchParams({
+                type: 'takePartyQuestReward',
+                party: data.partyId,
+                quest_data_id: data.questId
+              })
+            }
+          );
 
           const text = await response.text();
 
@@ -298,8 +394,15 @@ module.exports = async function runParties(page) {
         }
       );
 
-      console.log("📡 HTTP status: " + rewardResponse.status);
-      console.log("📡 Request successful: " + rewardResponse.ok);
+      console.log(
+        "📡 HTTP status: " +
+        rewardResponse.status
+      );
+
+      console.log(
+        "📡 Request successful: " +
+        rewardResponse.ok
+      );
 
       if (
         rewardResponse.data &&
@@ -309,7 +412,8 @@ module.exports = async function runParties(page) {
 
         console.log(
           "✅ Reward successfully collected for quest " +
-          questId + "!"
+          questId +
+          "!"
         );
 
         if (
@@ -326,12 +430,18 @@ module.exports = async function runParties(page) {
 
         console.log(
           "⚠️ Server did not report success for quest " +
-          questId + "."
+          questId +
+          "."
         );
 
         console.log("📦 Server response:");
+
         console.log(
-          JSON.stringify(rewardResponse.data, null, 2)
+          JSON.stringify(
+            rewardResponse.data,
+            null,
+            2
+          )
         );
       }
     } catch (error) {
@@ -359,10 +469,20 @@ module.exports = async function runParties(page) {
     (partyOwnerName || "Unknown")
   );
 
-  console.log("🆔 Party ID: " + partyId);
-  console.log("🔗 Party URL: " + partyFullUrl);
+  console.log(
+    "🆔 Party ID: " +
+    partyId
+  );
 
-  console.log("🎁 Attendance bonus: Processed");
+  console.log(
+    "🔗 Party URL: " +
+    partyFullUrl
+  );
+
+  console.log(
+    "🎁 Attendance bonus: Processed"
+  );
+
   console.log(
     "📋 Completed quests found: " +
     quest_data_id.size
@@ -378,5 +498,7 @@ module.exports = async function runParties(page) {
     failedRewards
   );
 
-  console.log("🏁 ================================");
+  console.log(
+    "🏁 ================================"
+  );
 };
