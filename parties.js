@@ -1,4 +1,3 @@
-
 // parties.js
 
 module.exports = async function runParties(page) {
@@ -6,9 +5,12 @@ module.exports = async function runParties(page) {
   console.log("🎉 Starting Parties Script");
   console.log("🎉 ================================");
 
-  const BASE_URL = 'https://v3.g.ladypopular.com';
+  const BASE_URL =
+    'https://v3.g.ladypopular.com';
+
   const PARTY_CENTER_URL =
     'https://v3.g.ladypopular.com/party/center.php';
+
   const PARTY_AJAX_URL =
     'https://v3.g.ladypopular.com/ajax/party/party.php';
 
@@ -103,12 +105,14 @@ module.exports = async function runParties(page) {
   // /party/wedding.php?party=16365
   // ------------------------------------------------------------
 
-  const partyUrlStrip = await activePartyLink.getAttribute('href');
+  const partyUrlStrip =
+    await activePartyLink.getAttribute('href');
 
   if (!partyUrlStrip) {
     console.log(
       "❌ Active party found, but party URL could not be extracted."
     );
+
     console.log("🛑 Stopping Parties Script.");
     return;
   }
@@ -117,11 +121,16 @@ module.exports = async function runParties(page) {
   // Extract Party ID
   // ------------------------------------------------------------
 
-  const partyIdMatch = partyUrlStrip.match(/[?&]party=(\d+)/);
+  const partyIdMatch =
+    partyUrlStrip.match(/[?&]party=(\d+)/);
 
   if (!partyIdMatch) {
     console.log("❌ Could not extract Party ID.");
-    console.log("🔗 Party URL strip: " + partyUrlStrip);
+    console.log(
+      "🔗 Party URL strip: " +
+      partyUrlStrip
+    );
+
     console.log("🛑 Stopping Parties Script.");
     return;
   }
@@ -131,36 +140,66 @@ module.exports = async function runParties(page) {
   console.log("────────────────────────────────");
   console.log("🎊 ACTIVE PARTY INFORMATION");
   console.log("────────────────────────────────");
+
   console.log(
     "👤 Party owner/name: " +
     (partyOwnerName || "Unknown")
   );
-  console.log("🔗 Party URL strip: " + partyUrlStrip);
-  console.log("🆔 Party ID: " + partyId);
 
+  console.log(
+    "🔗 Party URL strip: " +
+    partyUrlStrip
+  );
+
+  console.log(
+    "🆔 Party ID: " +
+    partyId
+  );
+
+  // ------------------------------------------------------------
   // Detect party type for logging
+  // ------------------------------------------------------------
+
   let partyType = "Unknown";
 
-  if (partyUrlStrip.includes("/party/engagement.php")) {
+  if (
+    partyUrlStrip.includes(
+      "/party/engagement.php"
+    )
+  ) {
     partyType = "Engagement";
-  } else if (partyUrlStrip.includes("/party/wedding.php")) {
+  } else if (
+    partyUrlStrip.includes(
+      "/party/wedding.php"
+    )
+  ) {
     partyType = "Wedding";
   }
 
-  console.log("💒 Party type: " + partyType);
+  console.log(
+    "💒 Party type: " +
+    partyType
+  );
 
   // ============================================================
   // STEP 3
   // Navigate to party page
   // ============================================================
 
-  const partyFullUrl = new URL(
-    partyUrlStrip,
-    BASE_URL
-  ).href;
+  const partyFullUrl =
+    new URL(
+      partyUrlStrip,
+      BASE_URL
+    ).href;
 
-  console.log("\n📍 STEP 3: Opening active party page...");
-  console.log("🌐 Full party URL: " + partyFullUrl);
+  console.log(
+    "\n📍 STEP 3: Opening active party page..."
+  );
+
+  console.log(
+    "🌐 Full party URL: " +
+    partyFullUrl
+  );
 
   await page.goto(partyFullUrl, {
     waitUntil: 'domcontentloaded',
@@ -168,56 +207,84 @@ module.exports = async function runParties(page) {
   });
 
   console.log("✅ Party page loaded.");
-  console.log("🔗 Current URL: " + page.url());
+  console.log(
+    "🔗 Current URL: " +
+    page.url()
+  );
 
   // ============================================================
   // STEP 4
   // Collect party attendance bonus
   // ============================================================
 
-  console.log("\n🎁 STEP 4: Collecting party attendance bonus...");
-  console.log("📡 Sending internal party bonus request...");
+  console.log(
+    "\n🎁 STEP 4: Collecting party attendance bonus..."
+  );
+
+  console.log(
+    "📡 Sending internal party bonus request..."
+  );
 
   try {
-    const bonusResponse = await page.evaluate(async function(partyId) {
-      const response = await fetch('/ajax/party/party.php', {
-        method: 'POST',
+    const bonusResponse =
+      await page.evaluate(
+        async function(partyId) {
+          const response =
+            await fetch(
+              '/ajax/party/party.php',
+              {
+                method: 'POST',
 
-        headers: {
-          'Content-Type':
-            'application/x-www-form-urlencoded; charset=UTF-8',
-          'X-Requested-With': 'XMLHttpRequest'
+                headers: {
+                  'Content-Type':
+                    'application/x-www-form-urlencoded; charset=UTF-8',
+
+                  'X-Requested-With':
+                    'XMLHttpRequest'
+                },
+
+                credentials:
+                  'same-origin',
+
+                body:
+                  new URLSearchParams({
+                    type: 'takeBonus',
+                    party: partyId
+                  })
+              }
+            );
+
+          const text =
+            await response.text();
+
+          let data;
+
+          try {
+            data = JSON.parse(text);
+          } catch {
+            data = {
+              rawResponse: text
+            };
+          }
+
+          return {
+            ok: response.ok,
+            status: response.status,
+            data: data
+          };
         },
+        partyId
+      );
 
-        credentials: 'same-origin',
+    console.log(
+      "📡 HTTP status: " +
+      bonusResponse.status
+    );
 
-        body: new URLSearchParams({
-          type: 'takeBonus',
-          party: partyId
-        })
-      });
-
-      const text = await response.text();
-
-      let data;
-
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = {
-          rawResponse: text
-        };
-      }
-
-      return {
-        ok: response.ok,
-        status: response.status,
-        data: data
-      };
-    }, partyId);
-
-    console.log("📡 HTTP status: " + bonusResponse.status);
-    console.log("📡 Request successful: " + bonusResponse.ok);
+    console.log(
+      "📡 Request successful: " +
+      bonusResponse.ok
+    );
 
     if (
       bonusResponse.data &&
@@ -263,12 +330,15 @@ module.exports = async function runParties(page) {
 
   // ============================================================
   // STEP 5
-  // Refresh party page and collect completed quest IDs
+  // Reload party page, OPEN MISSIONS TAB, then find quests
   // ============================================================
 
-  console.log("\n📍 STEP 5: Refreshing party page...");
   console.log(
-    "🔄 Reloading so we can inspect completed quests..."
+    "\n📍 STEP 5: Refreshing party page..."
+  );
+
+  console.log(
+    "🔄 Reloading before opening the Missions tab..."
   );
 
   await page.reload({
@@ -276,169 +346,410 @@ module.exports = async function runParties(page) {
     timeout: 60000
   });
 
-  console.log("✅ Party page refreshed.");
-  console.log("🔗 Current URL: " + page.url());
+  console.log(
+    "✅ Party page refreshed."
+  );
 
   console.log(
-    "\n⏳ Waiting for party quest data to load..."
+    "🔗 Current URL: " +
+    page.url()
   );
 
   // ------------------------------------------------------------
-  // Wait for the quest section to be populated.
-  //
-  // The quest HTML is apparently populated dynamically after
-  // DOMContentLoaded, so checking immediately after reload can
-  // return zero quests even though they exist.
+  // STEP 5A
+  // Wait for the party tabs to exist
   // ------------------------------------------------------------
+
+  console.log(
+    "\n⏳ Waiting for party tabs to appear..."
+  );
+
+  try {
+    await page.waitForSelector(
+      'li.quests-tab',
+      {
+        timeout: 20000
+      }
+    );
+
+    console.log(
+      "✅ Missions tab found."
+    );
+  } catch (error) {
+    console.log(
+      "⚠️ Missions tab did not appear within the timeout."
+    );
+  }
+
+  // ------------------------------------------------------------
+  // STEP 5B
+  // Inspect the Missions tab before opening it
+  // ------------------------------------------------------------
+
+  const missionsTabInfo =
+    await page.evaluate(() => {
+      const tab =
+        document.querySelector(
+          'li.quests-tab'
+        );
+
+      if (!tab) {
+        return null;
+      }
+
+      return {
+        exists: true,
+
+        className:
+          tab.className,
+
+        onclick:
+          tab.getAttribute('onclick'),
+
+        activeQuestData:
+          tab.getAttribute(
+            'data-active-quest-data'
+          ),
+
+        rewardClaimed:
+          tab.getAttribute(
+            'data-is-reward-claimed'
+          )
+      };
+    });
+
+  console.log(
+    "\n🔬 Missions tab information:"
+  );
+
+  console.log(
+    JSON.stringify(
+      missionsTabInfo,
+      null,
+      2
+    )
+  );
+
+  // ------------------------------------------------------------
+  // STEP 5C
+  // OPEN THE MISSIONS TAB
+  //
+  // This is the important part.
+  //
+  // The completed quest HTML is not necessarily present while
+  // the Missions tab is closed.
+  //
+  // Clicking the tab invokes:
+  //
+  //   getPartyTab('quests', this)
+  //
+  // which loads/populates the quest contents.
+  // ------------------------------------------------------------
+
+  console.log(
+    "\n📂 Opening Missions tab..."
+  );
+
+  let missionsTabOpened = false;
+
+  try {
+    const missionsTab =
+      await page.$(
+        'li.quests-tab'
+      );
+
+    if (missionsTab) {
+      await missionsTab.click();
+
+      missionsTabOpened = true;
+
+      console.log(
+        "✅ Missions tab clicked."
+      );
+    } else {
+      console.log(
+        "⚠️ Could not find Missions tab element."
+      );
+    }
+  } catch (error) {
+    console.log(
+      "⚠️ Normal Missions tab click failed: " +
+      error.message
+    );
+  }
+
+  // ------------------------------------------------------------
+  // STEP 5D
+  // If normal click failed, directly call getPartyTab()
+  // ------------------------------------------------------------
+
+  if (!missionsTabOpened) {
+    console.log(
+      "🔄 Trying site's getPartyTab('quests') function..."
+    );
+
+    try {
+      const directResult =
+        await page.evaluate(() => {
+          const tab =
+            document.querySelector(
+              'li.quests-tab'
+            );
+
+          if (
+            !tab ||
+            typeof window.getPartyTab !==
+              'function'
+          ) {
+            return {
+              success: false,
+              reason:
+                !tab
+                  ? 'Missions tab not found'
+                  : 'getPartyTab function not available'
+            };
+          }
+
+          window.getPartyTab(
+            'quests',
+            tab
+          );
+
+          return {
+            success: true
+          };
+        });
+
+      console.log(
+        "🔬 Direct Missions-tab result:"
+      );
+
+      console.log(
+        JSON.stringify(
+          directResult,
+          null,
+          2
+        )
+      );
+
+      if (directResult.success) {
+        missionsTabOpened = true;
+      }
+    } catch (error) {
+      console.log(
+        "❌ Direct getPartyTab() call failed: " +
+        error.message
+      );
+    }
+  }
+
+  // ------------------------------------------------------------
+  // STEP 5E
+  // Wait for the dynamically loaded quest content
+  // ------------------------------------------------------------
+
+  console.log(
+    "\n⏳ Waiting for Missions tab content..."
+  );
 
   try {
     await page.waitForFunction(
       () => {
-        const questHolder =
-          document.querySelector('#questsHolder');
+        const questsHolder =
+          document.querySelector(
+            '#questsHolder'
+          );
 
-        if (!questHolder) {
+        if (!questsHolder) {
           return false;
         }
 
         const completedQuests =
-          questHolder.querySelectorAll(
+          questsHolder.querySelectorAll(
             '[id^="completed-quest-"]'
           );
 
-        const activeQuest =
-          document.querySelector(
-            '#active-quest-view[data-completed-quests-ids]'
-          );
-
-        return (
-          completedQuests.length > 0 ||
-          activeQuest !== null
-        );
+        return completedQuests.length > 0;
       },
       {
         timeout: 20000
       }
     );
 
-    console.log("✅ Party quest data is loaded.");
+    console.log(
+      "✅ Completed quest content loaded."
+    );
   } catch (error) {
     console.log(
-      "⚠️ Timed out waiting for quest data."
+      "⚠️ Timed out waiting for completed quest content."
     );
 
     console.log(
-      "🔎 We will still attempt to inspect the page."
+      "🔎 We will still inspect the page."
     );
   }
 
-  console.log("\n🔎 Looking for completed party quests...");
-
   // ------------------------------------------------------------
-  // STEP 5A
-  // Read completed quest IDs from data-completed-quests-ids
-  //
-  // Example from the page:
-  //
-  // <div
-  //   id="active-quest-view"
-  //   data-completed-quests-ids="[&quot;760051&quot;,&quot;760052&quot;]"
-  // >
-  //
-  // Browser getAttribute() automatically gives us:
-  //
-  // ["760051","760052"]
+  // Give the DOM a tiny moment to finish rendering.
   // ------------------------------------------------------------
 
-  const questIdsFromDataAttribute = await page.evaluate(() => {
-    const activeQuestView =
-      document.querySelector(
-        '#active-quest-view[data-completed-quests-ids]'
-      );
+  await page.waitForTimeout(500);
 
-    if (!activeQuestView) {
-      return [];
-    }
+  // ============================================================
+  // STEP 5F
+  // Collect completed quest IDs
+  // ============================================================
 
-    const rawValue =
-      activeQuestView.getAttribute(
-        'data-completed-quests-ids'
-      );
-
-    if (!rawValue) {
-      return [];
-    }
-
-    try {
-      const parsed = JSON.parse(rawValue);
-
-      if (Array.isArray(parsed)) {
-        return parsed
-          .map(id => String(id))
-          .filter(id => /^\d+$/.test(id));
-      }
-    } catch (error) {
-      console.log(
-        "⚠️ Could not parse data-completed-quests-ids."
-      );
-    }
-
-    return [];
-  });
-
-  // ------------------------------------------------------------
-  // STEP 5B
-  // Read IDs directly from completed quest elements
-  //
-  // Example:
-  //
-  // <div id="completed-quest-760051"
-  //      class="single-quest complete">
-  //
-  // <div id="completed-quest-760052"
-  //      class="single-quest complete">
-  // ------------------------------------------------------------
-
-  const questIdsFromElements = await page.$$eval(
-    '#questsHolder [id^="completed-quest-"]',
-    function(elements) {
-      const ids = [];
-
-      for (const element of elements) {
-        const match = element.id.match(
-          /^completed-quest-(\d+)$/
-        );
-
-        if (match) {
-          ids.push(match[1]);
-        }
-      }
-
-      return ids;
-    }
+  console.log(
+    "\n🔎 Looking for completed party quests..."
   );
 
   // ------------------------------------------------------------
-  // STEP 5C
-  // Merge both sources.
+  // Source 1:
+  // data-completed-quests-ids
+  // ------------------------------------------------------------
+
+  const questIdsFromDataAttribute =
+    await page.evaluate(() => {
+      const activeQuestView =
+        document.querySelector(
+          '#active-quest-view[data-completed-quests-ids]'
+        );
+
+      if (!activeQuestView) {
+        return [];
+      }
+
+      const rawValue =
+        activeQuestView.getAttribute(
+          'data-completed-quests-ids'
+        );
+
+      if (!rawValue) {
+        return [];
+      }
+
+      try {
+        const parsed =
+          JSON.parse(rawValue);
+
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map(id => String(id))
+            .filter(
+              id => /^\d+$/.test(id)
+            );
+        }
+      } catch (error) {
+        // Ignore malformed attribute.
+      }
+
+      return [];
+    });
+
+  // ------------------------------------------------------------
+  // Source 2:
+  // completed-quest elements
   //
-  // Using a Set prevents duplicates because the same quest can
-  // appear in more than one location in the HTML.
+  // Example:
+  //
+  // <div id="completed-quest-760051">
+  //
+  // <div id="completed-quest-760052">
   // ------------------------------------------------------------
 
-  const quest_data_id = new Set();
+  const questIdsFromElements =
+    await page.$$eval(
+      '#questsHolder [id^="completed-quest-"]',
+      function(elements) {
+        const ids = [];
 
-  for (const questId of questIdsFromDataAttribute) {
-    quest_data_id.add(questId);
+        for (
+          const element of elements
+        ) {
+          const match =
+            element.id.match(
+              /^completed-quest-(\d+)$/
+            );
+
+          if (match) {
+            ids.push(match[1]);
+          }
+        }
+
+        return ids;
+      }
+    );
+
+  // ------------------------------------------------------------
+  // Source 3:
+  // Search the whole document as a fallback.
+  //
+  // This is useful if the game's HTML structure changes and
+  // completed quests are rendered somewhere outside #questsHolder.
+  // ------------------------------------------------------------
+
+  const questIdsFromDocument =
+    await page.$$eval(
+      '[id^="completed-quest-"]',
+      function(elements) {
+        const ids = [];
+
+        for (
+          const element of elements
+        ) {
+          const match =
+            element.id.match(
+              /^completed-quest-(\d+)$/
+            );
+
+          if (match) {
+            ids.push(match[1]);
+          }
+        }
+
+        return ids;
+      }
+    );
+
+  // ------------------------------------------------------------
+  // Merge all sources.
+  // ------------------------------------------------------------
+
+  const quest_data_id =
+    new Set();
+
+  for (
+    const questId
+    of questIdsFromDataAttribute
+  ) {
+    quest_data_id.add(
+      questId
+    );
   }
 
-  for (const questId of questIdsFromElements) {
-    quest_data_id.add(questId);
+  for (
+    const questId
+    of questIdsFromElements
+  ) {
+    quest_data_id.add(
+      questId
+    );
   }
 
-  // ------------------------------------------------------------
-  // Debug information
-  // ------------------------------------------------------------
+  for (
+    const questId
+    of questIdsFromDocument
+  ) {
+    quest_data_id.add(
+      questId
+    );
+  }
+
+  // ============================================================
+  // STEP 5G
+  // Quest detection debug
+  // ============================================================
 
   console.log(
     "\n🔬 Quest detection debug:"
@@ -454,7 +765,7 @@ module.exports = async function runParties(page) {
   );
 
   console.log(
-    "📌 IDs from completed-quest elements: " +
+    "📌 IDs from #questsHolder elements: " +
     (
       questIdsFromElements.length > 0
         ? questIdsFromElements.join(", ")
@@ -463,10 +774,21 @@ module.exports = async function runParties(page) {
   );
 
   console.log(
+    "📌 IDs from entire document: " +
+    (
+      questIdsFromDocument.length > 0
+        ? questIdsFromDocument.join(", ")
+        : "none"
+    )
+  );
+
+  console.log(
     "📌 Unique quest IDs after merging: " +
     (
       quest_data_id.size > 0
-        ? Array.from(quest_data_id).join(", ")
+        ? Array.from(
+            quest_data_id
+          ).join(", ")
         : "none"
     )
   );
@@ -476,38 +798,78 @@ module.exports = async function runParties(page) {
     quest_data_id.size
   );
 
-  if (quest_data_id.size === 0) {
-    console.log("ℹ️ No completed quests found.");
+  if (
+    quest_data_id.size === 0
+  ) {
+    console.log(
+      "ℹ️ No completed quests found."
+    );
 
-    // Extra diagnostic information in case the page structure
-    // changes again.
-    const questDebugInfo = await page.evaluate(() => {
-      const questsHolder =
-        document.querySelector('#questsHolder');
+    // ----------------------------------------------------------
+    // Extra diagnostics
+    // ----------------------------------------------------------
 
-      const activeQuestView =
-        document.querySelector('#active-quest-view');
+    const questDebugInfo =
+      await page.evaluate(() => {
+        const questsHolder =
+          document.querySelector(
+            '#questsHolder'
+          );
 
-      return {
-        questsHolderExists: !!questsHolder,
+        const activeQuestView =
+          document.querySelector(
+            '#active-quest-view'
+          );
 
-        completedQuestElements:
-          questsHolder
-            ? questsHolder.querySelectorAll(
-                '[id^="completed-quest-"]'
-              ).length
-            : 0,
+        const missionsTab =
+          document.querySelector(
+            'li.quests-tab'
+          );
 
-        activeQuestData:
-          activeQuestView
-            ? activeQuestView.getAttribute(
-                'data-completed-quests-ids'
-              )
-            : null
-      };
-    });
+        return {
+          questsHolderExists:
+            !!questsHolder,
 
-    console.log("🔬 Additional quest diagnostics:");
+          completedQuestElements:
+            questsHolder
+              ? questsHolder.querySelectorAll(
+                  '[id^="completed-quest-"]'
+                ).length
+              : 0,
+
+          completedQuestElementsWholePage:
+            document.querySelectorAll(
+              '[id^="completed-quest-"]'
+            ).length,
+
+          activeQuestData:
+            activeQuestView
+              ? activeQuestView.getAttribute(
+                  'data-completed-quests-ids'
+                )
+              : null,
+
+          missionsTabExists:
+            !!missionsTab,
+
+          missionsTabClass:
+            missionsTab
+              ? missionsTab.className
+              : null,
+
+          missionsTabRewardClaimed:
+            missionsTab
+              ? missionsTab.getAttribute(
+                  'data-is-reward-claimed'
+                )
+              : null
+        };
+      });
+
+    console.log(
+      "🔬 Additional quest diagnostics:"
+    );
+
     console.log(
       JSON.stringify(
         questDebugInfo,
@@ -516,10 +878,18 @@ module.exports = async function runParties(page) {
       )
     );
   } else {
-    console.log("🎯 Completed quest IDs found:");
+    console.log(
+      "🎯 Completed quest IDs found:"
+    );
 
-    for (const questId of quest_data_id) {
-      console.log("   └── " + questId);
+    for (
+      const questId
+      of quest_data_id
+    ) {
+      console.log(
+        "   └── " +
+        questId
+      );
     }
   }
 
@@ -528,9 +898,17 @@ module.exports = async function runParties(page) {
   // Collect reward for every completed quest
   // ============================================================
 
-  if (quest_data_id.size === 0) {
-    console.log("\n⏭️ No quest rewards to collect.");
-    console.log("🎉 Parties Script finished.");
+  if (
+    quest_data_id.size === 0
+  ) {
+    console.log(
+      "\n⏭️ No quest rewards to collect."
+    );
+
+    console.log(
+      "🎉 Parties Script finished."
+    );
+
     return;
   }
 
@@ -551,7 +929,14 @@ module.exports = async function runParties(page) {
   let successfulRewards = 0;
   let failedRewards = 0;
 
-  for (const questId of quest_data_id) {
+  // ============================================================
+  // Collect each reward
+  // ============================================================
+
+  for (
+    const questId
+    of quest_data_id
+  ) {
     console.log(
       "\n────────────────────────────────"
     );
@@ -565,7 +950,9 @@ module.exports = async function runParties(page) {
       "────────────────────────────────"
     );
 
-    console.log("📡 Request payload:");
+    console.log(
+      "📡 Request payload:"
+    );
 
     console.log(
       "   type          = takePartyQuestReward"
@@ -582,52 +969,65 @@ module.exports = async function runParties(page) {
     );
 
     try {
-      const rewardResponse = await page.evaluate(
-        async function(data) {
-          const response = await fetch(
-            '/ajax/party/party.php',
-            {
-              method: 'POST',
+      const rewardResponse =
+        await page.evaluate(
+          async function(data) {
+            const response =
+              await fetch(
+                '/ajax/party/party.php',
+                {
+                  method: 'POST',
 
-              headers: {
-                'Content-Type':
-                  'application/x-www-form-urlencoded; charset=UTF-8',
-                'X-Requested-With': 'XMLHttpRequest'
-              },
+                  headers: {
+                    'Content-Type':
+                      'application/x-www-form-urlencoded; charset=UTF-8',
 
-              credentials: 'same-origin',
+                    'X-Requested-With':
+                      'XMLHttpRequest'
+                  },
 
-              body: new URLSearchParams({
-                type: 'takePartyQuestReward',
-                party: data.partyId,
-                quest_data_id: data.questId
-              })
+                  credentials:
+                    'same-origin',
+
+                  body:
+                    new URLSearchParams({
+                      type:
+                        'takePartyQuestReward',
+
+                      party:
+                        data.partyId,
+
+                      quest_data_id:
+                        data.questId
+                    })
+                }
+              );
+
+            const text =
+              await response.text();
+
+            let responseData;
+
+            try {
+              responseData =
+                JSON.parse(text);
+            } catch {
+              responseData = {
+                rawResponse: text
+              };
             }
-          );
 
-          const text = await response.text();
-
-          let responseData;
-
-          try {
-            responseData = JSON.parse(text);
-          } catch {
-            responseData = {
-              rawResponse: text
+            return {
+              ok: response.ok,
+              status: response.status,
+              data: responseData
             };
+          },
+          {
+            partyId: partyId,
+            questId: questId
           }
-
-          return {
-            ok: response.ok,
-            status: response.status,
-            data: responseData
-          };
-        },
-        {
-          partyId: partyId,
-          questId: questId
-        }
-      );
+        );
 
       console.log(
         "📡 HTTP status: " +
@@ -669,7 +1069,9 @@ module.exports = async function runParties(page) {
           "."
         );
 
-        console.log("📦 Server response:");
+        console.log(
+          "📦 Server response:"
+        );
 
         console.log(
           JSON.stringify(
@@ -695,9 +1097,17 @@ module.exports = async function runParties(page) {
   // FINAL SUMMARY
   // ============================================================
 
-  console.log("\n🎉 ================================");
-  console.log("🎉 Parties Script Complete");
-  console.log("🎉 ================================");
+  console.log(
+    "\n🎉 ================================"
+  );
+
+  console.log(
+    "🎉 Parties Script Complete"
+  );
+
+  console.log(
+    "🎉 ================================"
+  );
 
   console.log(
     "👤 Party: " +
