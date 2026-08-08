@@ -1,3 +1,4 @@
+
 // parties.js
 
 module.exports = async function runParties(page) {
@@ -6,8 +7,10 @@ module.exports = async function runParties(page) {
   console.log("🎉 ================================");
 
   const BASE_URL = 'https://v3.g.ladypopular.com';
-  const PARTY_CENTER_URL = 'https://v3.g.ladypopular.com/party/center.php';
-  const PARTY_AJAX_URL = 'https://v3.g.ladypopular.com/ajax/party/party.php';
+  const PARTY_CENTER_URL =
+    'https://v3.g.ladypopular.com/party/center.php';
+  const PARTY_AJAX_URL =
+    'https://v3.g.ladypopular.com/ajax/party/party.php';
 
   // ============================================================
   // STEP 1
@@ -35,20 +38,25 @@ module.exports = async function runParties(page) {
   /*
    * IMPORTANT:
    *
-   * The Party Center also contains a bridesmaid entry like:
+   * The Party Center can contain a bridesmaid entry like:
    *
-   *   <li class="party-panel active brides">
-   *       ...
-   *       /party/center/planning.php?bridesmaid_party_id=7943
+   *   /party/center/planning.php?bridesmaid_party_id=7943
    *
-   * That is NOT the party we want.
+   * That is NOT the actual active party.
    *
-   * The actual active party has a link like:
+   * The actual party has a link containing:
    *
    *   /party/engagement.php?party=11365
    *
-   * Therefore we specifically look for a party link containing
-   * "?party=" instead of simply selecting ".party-panel.active".
+   * or:
+   *
+   *   /party/wedding.php?party=16365
+   *
+   * Therefore we specifically require:
+   *
+   *   ?party=
+   *
+   * and exclude the bridesmaid panel.
    */
 
   const activePartyLink = await page.$(
@@ -63,15 +71,6 @@ module.exports = async function runParties(page) {
   }
 
   console.log("🎉 Active party found!");
-
-  // ------------------------------------------------------------
-  // Get the containing party panel
-  // ------------------------------------------------------------
-
-  const activeParty = await activePartyLink.evaluate(el => {
-    const panel = el.closest('li.party-panel');
-    return panel ? panel.outerHTML : null;
-  });
 
   // ------------------------------------------------------------
   // Get party owner/name
@@ -98,14 +97,18 @@ module.exports = async function runParties(page) {
   // ------------------------------------------------------------
   // Get party URL
   //
-  // Example:
+  // Examples:
+  //
   // /party/engagement.php?party=11365
+  // /party/wedding.php?party=16365
   // ------------------------------------------------------------
 
   const partyUrlStrip = await activePartyLink.getAttribute('href');
 
   if (!partyUrlStrip) {
-    console.log("❌ Active party found, but party URL could not be extracted.");
+    console.log(
+      "❌ Active party found, but party URL could not be extracted."
+    );
     console.log("🛑 Stopping Parties Script.");
     return;
   }
@@ -128,9 +131,23 @@ module.exports = async function runParties(page) {
   console.log("────────────────────────────────");
   console.log("🎊 ACTIVE PARTY INFORMATION");
   console.log("────────────────────────────────");
-  console.log("👤 Party owner/name: " + (partyOwnerName || "Unknown"));
+  console.log(
+    "👤 Party owner/name: " +
+    (partyOwnerName || "Unknown")
+  );
   console.log("🔗 Party URL strip: " + partyUrlStrip);
   console.log("🆔 Party ID: " + partyId);
+
+  // Detect party type for logging
+  let partyType = "Unknown";
+
+  if (partyUrlStrip.includes("/party/engagement.php")) {
+    partyType = "Engagement";
+  } else if (partyUrlStrip.includes("/party/wedding.php")) {
+    partyType = "Wedding";
+  }
+
+  console.log("💒 Party type: " + partyType);
 
   // ============================================================
   // STEP 3
@@ -165,12 +182,15 @@ module.exports = async function runParties(page) {
     const bonusResponse = await page.evaluate(async function(partyId) {
       const response = await fetch('/ajax/party/party.php', {
         method: 'POST',
+
         headers: {
           'Content-Type':
             'application/x-www-form-urlencoded; charset=UTF-8',
           'X-Requested-With': 'XMLHttpRequest'
         },
+
         credentials: 'same-origin',
+
         body: new URLSearchParams({
           type: 'takeBonus',
           party: partyId
@@ -213,7 +233,10 @@ module.exports = async function runParties(page) {
       ) {
         console.log(
           "🎁 Bonus received: " +
-          (bonusResponse.data.bonus.item.name || "Unknown item")
+          (
+            bonusResponse.data.bonus.item.name ||
+            "Unknown item"
+          )
         );
       }
     } else {
@@ -222,8 +245,13 @@ module.exports = async function runParties(page) {
       );
 
       console.log("📦 Server response:");
+
       console.log(
-        JSON.stringify(bonusResponse.data, null, 2)
+        JSON.stringify(
+          bonusResponse.data,
+          null,
+          2
+        )
       );
     }
   } catch (error) {
@@ -251,12 +279,130 @@ module.exports = async function runParties(page) {
   console.log("✅ Party page refreshed.");
   console.log("🔗 Current URL: " + page.url());
 
+  console.log(
+    "\n⏳ Waiting for party quest data to load..."
+  );
+
+  // ------------------------------------------------------------
+  // Wait for the quest section to be populated.
+  //
+  // The quest HTML is apparently populated dynamically after
+  // DOMContentLoaded, so checking immediately after reload can
+  // return zero quests even though they exist.
+  // ------------------------------------------------------------
+
+  try {
+    await page.waitForFunction(
+      () => {
+        const questHolder =
+          document.querySelector('#questsHolder');
+
+        if (!questHolder) {
+          return false;
+        }
+
+        const completedQuests =
+          questHolder.querySelectorAll(
+            '[id^="completed-quest-"]'
+          );
+
+        const activeQuest =
+          document.querySelector(
+            '#active-quest-view[data-completed-quests-ids]'
+          );
+
+        return (
+          completedQuests.length > 0 ||
+          activeQuest !== null
+        );
+      },
+      {
+        timeout: 20000
+      }
+    );
+
+    console.log("✅ Party quest data is loaded.");
+  } catch (error) {
+    console.log(
+      "⚠️ Timed out waiting for quest data."
+    );
+
+    console.log(
+      "🔎 We will still attempt to inspect the page."
+    );
+  }
+
   console.log("\n🔎 Looking for completed party quests...");
 
-  const completedQuestIds = await page.$$eval(
-    '[id^="completed-quest-"]',
+  // ------------------------------------------------------------
+  // STEP 5A
+  // Read completed quest IDs from data-completed-quests-ids
+  //
+  // Example from the page:
+  //
+  // <div
+  //   id="active-quest-view"
+  //   data-completed-quests-ids="[&quot;760051&quot;,&quot;760052&quot;]"
+  // >
+  //
+  // Browser getAttribute() automatically gives us:
+  //
+  // ["760051","760052"]
+  // ------------------------------------------------------------
+
+  const questIdsFromDataAttribute = await page.evaluate(() => {
+    const activeQuestView =
+      document.querySelector(
+        '#active-quest-view[data-completed-quests-ids]'
+      );
+
+    if (!activeQuestView) {
+      return [];
+    }
+
+    const rawValue =
+      activeQuestView.getAttribute(
+        'data-completed-quests-ids'
+      );
+
+    if (!rawValue) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(rawValue);
+
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map(id => String(id))
+          .filter(id => /^\d+$/.test(id));
+      }
+    } catch (error) {
+      console.log(
+        "⚠️ Could not parse data-completed-quests-ids."
+      );
+    }
+
+    return [];
+  });
+
+  // ------------------------------------------------------------
+  // STEP 5B
+  // Read IDs directly from completed quest elements
+  //
+  // Example:
+  //
+  // <div id="completed-quest-760051"
+  //      class="single-quest complete">
+  //
+  // <div id="completed-quest-760052"
+  //      class="single-quest complete">
+  // ------------------------------------------------------------
+
+  const questIdsFromElements = await page.$$eval(
+    '#questsHolder [id^="completed-quest-"]',
     function(elements) {
-      const ids = new Set();
+      const ids = [];
 
       for (const element of elements) {
         const match = element.id.match(
@@ -264,23 +410,111 @@ module.exports = async function runParties(page) {
         );
 
         if (match) {
-          ids.add(match[1]);
+          ids.push(match[1]);
         }
       }
 
-      return Array.from(ids);
+      return ids;
     }
   );
 
-  const quest_data_id = new Set(completedQuestIds);
+  // ------------------------------------------------------------
+  // STEP 5C
+  // Merge both sources.
+  //
+  // Using a Set prevents duplicates because the same quest can
+  // appear in more than one location in the HTML.
+  // ------------------------------------------------------------
+
+  const quest_data_id = new Set();
+
+  for (const questId of questIdsFromDataAttribute) {
+    quest_data_id.add(questId);
+  }
+
+  for (const questId of questIdsFromElements) {
+    quest_data_id.add(questId);
+  }
+
+  // ------------------------------------------------------------
+  // Debug information
+  // ------------------------------------------------------------
 
   console.log(
-    "📋 Completed quest count: " +
+    "\n🔬 Quest detection debug:"
+  );
+
+  console.log(
+    "📌 IDs from data-completed-quests-ids: " +
+    (
+      questIdsFromDataAttribute.length > 0
+        ? questIdsFromDataAttribute.join(", ")
+        : "none"
+    )
+  );
+
+  console.log(
+    "📌 IDs from completed-quest elements: " +
+    (
+      questIdsFromElements.length > 0
+        ? questIdsFromElements.join(", ")
+        : "none"
+    )
+  );
+
+  console.log(
+    "📌 Unique quest IDs after merging: " +
+    (
+      quest_data_id.size > 0
+        ? Array.from(quest_data_id).join(", ")
+        : "none"
+    )
+  );
+
+  console.log(
+    "\n📋 Completed quest count: " +
     quest_data_id.size
   );
 
   if (quest_data_id.size === 0) {
     console.log("ℹ️ No completed quests found.");
+
+    // Extra diagnostic information in case the page structure
+    // changes again.
+    const questDebugInfo = await page.evaluate(() => {
+      const questsHolder =
+        document.querySelector('#questsHolder');
+
+      const activeQuestView =
+        document.querySelector('#active-quest-view');
+
+      return {
+        questsHolderExists: !!questsHolder,
+
+        completedQuestElements:
+          questsHolder
+            ? questsHolder.querySelectorAll(
+                '[id^="completed-quest-"]'
+              ).length
+            : 0,
+
+        activeQuestData:
+          activeQuestView
+            ? activeQuestView.getAttribute(
+                'data-completed-quests-ids'
+              )
+            : null
+      };
+    });
+
+    console.log("🔬 Additional quest diagnostics:");
+    console.log(
+      JSON.stringify(
+        questDebugInfo,
+        null,
+        2
+      )
+    );
   } else {
     console.log("🎯 Completed quest IDs found:");
 
@@ -332,6 +566,7 @@ module.exports = async function runParties(page) {
     );
 
     console.log("📡 Request payload:");
+
     console.log(
       "   type          = takePartyQuestReward"
     );
@@ -467,6 +702,11 @@ module.exports = async function runParties(page) {
   console.log(
     "👤 Party: " +
     (partyOwnerName || "Unknown")
+  );
+
+  console.log(
+    "💒 Party type: " +
+    partyType
   );
 
   console.log(
