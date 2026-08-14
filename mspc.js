@@ -17,6 +17,7 @@ const runGuildShow = require('./guild-show.js');
 const runPetTraining = require('./pet-train.js');
 const runBridesmaids = require('./bridesmaids.js');
 const runParties = require('./parties.js');
+const runApartmentAndGifts = require('./apartment-gifts.js');
 
 const scripts = [
   { name: 'Burn Energy', fn: runBurnEnergy, alwaysRun: true },
@@ -33,6 +34,7 @@ const scripts = [
   { name: 'Guild Show', fn: runGuildShow, alwaysRun: true },
   { name: 'Pet Training', fn: runPetTraining, alwaysRun: false },
   { name: 'Bridesmaids Tasks', fn: runBridesmaids, alwaysRun: true },
+  { name: 'Apartment + Gifts', fn: runApartmentAndGifts, alwaysRun: true },
 ];
 
 (async () => {
