@@ -4,6 +4,7 @@ const { chromium } = require('playwright');
 // ⬇️ Import all sub-scripts (exported as functions)..
 const DIVIDER = '────────────────────────────────────────────────────────────────────────────────';
 const runBurnEnergy = require('./burn-energy.js');
+const runClaimRewards = require('./claim-BPrewards.js');
 const runFashionMagazine = require('./fashion-magazine.js');
 const runTeleportEvent = require('./tele.js');
 const runSolitaireEvent = require('./solitaire.js');
@@ -22,6 +23,7 @@ const runCars = require('./cars.js');
 
 const scripts = [
   { name: 'Burn Energy', fn: runBurnEnergy, alwaysRun: true },
+  { name: 'Claim BP Duel Rewards', fn: runClaimRewards, alwaysRun: true },
   { name: 'Fashion Magazine', fn: runFashionMagazine, envKey: 'LP_FASHION_MAGAZINE_URL' },
   { name: 'Tele Event', fn: runTeleportEvent, envKey: 'LP_TELEPORT_URL' },
   { name: 'Solitaire Event', fn: runSolitaireEvent, envKey: 'LP_SOLITAIRE_URL' },
