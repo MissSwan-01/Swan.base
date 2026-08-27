@@ -44,17 +44,6 @@ module.exports = async function runBurnEnergy(page) {
       console.log(`🎟️ You have ${tickets} tickets.`);
 
       // ----------------------------------------------------------
-      // We want to keep 10 tickets.
-      //
-      // Example:
-      // 15 tickets → use 5
-      // 12 tickets → use 2
-      // 10 tickets → use 0
-      // 8 tickets  → use 0
-      // ----------------------------------------------------------
-
-      /* const ticketsToUse = tickets - 90; */ // old line where 90 is constant. 
-
       // Read the ticket reserve from the environment.
       // Normal workflow will provide 90.
       // Special 2–3 AM workflow will provide 0.
