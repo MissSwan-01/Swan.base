@@ -53,7 +53,14 @@ module.exports = async function runBurnEnergy(page) {
       // 8 tickets  → use 0
       // ----------------------------------------------------------
 
-      const ticketsToUse = tickets - 90;
+      /* const ticketsToUse = tickets - 90; */ // old line where 90 is constant. 
+
+      // Read the ticket reserve from the environment.
+      // Normal workflow will provide 90.
+      // Special 2–3 AM workflow will provide 0.
+      // If nothing is provided, safely default to 90.
+      const ticketReserve = Number(process.env.TICKET_RESERVE ?? 90);
+      const ticketsToUse = tickets - ticketReserve;
 
       // If we have 10 or fewer tickets, there is nothing to spend.
       if (ticketsToUse <= 0) {
