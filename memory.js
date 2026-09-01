@@ -44,7 +44,7 @@ module.exports = async function runMemoryEvent(page) {
   //
   // Waits 10 seconds, clicks the tile, then reads its hidden ID.
   //
-  // This is used by the original game logic.
+  // This is used by the original game logic..
   // ============================================================
 
   async function clickTileAndGetId(index) {
