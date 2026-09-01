@@ -1,5 +1,5 @@
 module.exports = async function runBurnEnergy(page) {
-  // 🟧 FASHION ARENA
+  // 🟧 FASHION ARENA.
   let arenaEnergy = 1;
 
   while (arenaEnergy > 0) {
