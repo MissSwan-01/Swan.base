@@ -35,4 +35,4 @@ module.exports = async function runBoyfriendKiss(page) {
     console.log("💋 BF Kiss: cooldown / skipped");
   }
 };
-//.
+//..
