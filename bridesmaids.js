@@ -9,7 +9,7 @@ module.exports = async function runBridesmaids(page) {
   console.log(`👰 Bridesmaids script started`);
 
   // =========================
-  // 🌐 LOAD PAGE
+  // 🌐 LOAD PAGE.
   // =========================
   await page.goto(TARGET_URL, {
     waitUntil: 'domcontentloaded',
