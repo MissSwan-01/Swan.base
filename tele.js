@@ -1,4 +1,4 @@
-// tele.js..
+// tele.js.
 
 module.exports = async function runTeleportEvent(page) {
   const teleportUrl = process.env.LP_TELEPORT_URL;
