@@ -100,7 +100,7 @@ module.exports = async function runTeleportEvent(page) {
         }
       });
 
-      if (minMark <= 3 && hingeList.length) {
+      if (minMark <= 6 && hingeList.length) {
         const sac = hingeList.filter(h => sacrificialHint.has(h.cell));
         const chosenH = randomPick(sac.length ? sac : hingeList);
         const [hr, hc] = chosenH.cell.split(',').map(Number);
