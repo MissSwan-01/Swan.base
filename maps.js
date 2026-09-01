@@ -17,7 +17,7 @@ module.exports = async function runMapsEvent(page) {
     '.currency-tries .currency-circle.currency-circle-full',
     circles => circles.length
   );
-  console.log(`🎯 Full tries available: ${fullCircles}`);
+  console.log(`🎯 Full tries available: ${fullCircles+1}`);
 
   let successfulClicks = 0;
 
