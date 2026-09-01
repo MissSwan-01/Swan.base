@@ -108,16 +108,9 @@ module.exports = async function runMemoryEvent(page) {
 
     if (!tile) return;
 
-    console.log(
-      `🕒 Waiting 10s before nominal click on tile ${index}...`
-    );
-
     await page.waitForTimeout(10000);
 
     await tile.click({ force: true });
-
-    console.log(
-      `🔄 Nominally clicked tile ${index}`
     );
   }
 
@@ -303,30 +296,9 @@ module.exports = async function runMemoryEvent(page) {
         `❌ Not a match: ${firstIndex} & ${secondIndex}`
       );
 
-
-      // --------------------------------------------------------
-      // NOMINAL RE-CLICKS
-      //
-      // Re-click the exact same two tiles once each.
-      //
-      // These clicks:
-      //   - wait 10 seconds each
-      //   - click the tile
-      //   - DO NOT read the ID
-      //   - DO NOT modify clickedOnce
-      //   - DO NOT modify matched
-      //   - DO NOT modify known
-      //
-      // After these two clicks, execution continues exactly
-      // where the original code would have continued.
-      // --------------------------------------------------------
-
       await nominalClickTile(firstIndex);
       await nominalClickTile(secondIndex);
 
-      console.log(
-        "✅ Nominal re-clicks complete. Continuing normally."
-      );
     }
   }
 
