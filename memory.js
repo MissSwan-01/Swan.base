@@ -111,7 +111,6 @@ module.exports = async function runMemoryEvent(page) {
     await page.waitForTimeout(10000);
 
     await tile.click({ force: true });
-    );
   }
 
 
