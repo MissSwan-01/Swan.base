@@ -5,7 +5,7 @@
 // ================================================================
 //
 // PURPOSE:
-// 1. Open the Cars page.
+// 1. Open the Cars page..
 // 2. Inspect all car containers on the page..
 // 3. Count the total cars.
 // 4. Determine which cars are currently available for activation.
