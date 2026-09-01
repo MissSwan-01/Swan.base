@@ -13,7 +13,7 @@ module.exports = async function runSlotsEvent(page) {
     await page.waitForTimeout(30000); // Wait 30 seconds
   }
 
-  // 🎰 Repeatedly click spin if tries and emeralds available
+  // 🎰 Repeatedly click spin if tries and emeralds available.
   while (true) {
     // 💎 Check emeralds
     const emeraldsText = await page.$eval('#player-emeralds', el => el.textContent.trim());
