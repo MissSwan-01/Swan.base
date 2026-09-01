@@ -1,4 +1,4 @@
-// memory.js..
+// memory.js
 
 module.exports = async function runMemoryEvent(page) {
   const memoryUrl = process.env.LP_MEMORY_URL;
@@ -16,119 +16,404 @@ module.exports = async function runMemoryEvent(page) {
   }
 
   console.log("▶️ Clicking start game button...");
-  const startButton = await page.waitForSelector('button.btn-free-reset', { timeout: 180000 }); // 3 minutes
+  const startButton = await page.waitForSelector(
+    'button.btn-free-reset',
+    { timeout: 180000 }
+  );
+
   await page.waitForTimeout(1000);
   await startButton.click({ force: true });
-  await page.waitForSelector('.memory-grid-wrapper', { timeout: 30000 });
+
+  await page.waitForSelector(
+    '.memory-grid-wrapper',
+    { timeout: 30000 }
+  );
+
   console.log("🎯 Memory grid loaded.");
 
   console.log("🔁 Final pre-game refresh...");
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(30000);
 
-  const getAllTiles = async () => await page.$$('.memory-grid-item:not(.memory-grid-item-fake)');
+  const getAllTiles = async () =>
+    await page.$$('.memory-grid-item:not(.memory-grid-item-fake)');
+
+  // ============================================================
+  // NORMAL TILE CLICK
+  // ============================================================
+  //
+  // Waits 10 seconds, clicks the tile, then reads its hidden ID.
+  //
+  // This is used by the original game logic.
+  // ============================================================
 
   async function clickTileAndGetId(index) {
     const tiles = await getAllTiles();
     const tile = tiles[index];
+
     if (!tile) return null;
+
     console.log(`🕒 Waiting 10s before clicking tile ${index}...`);
     await page.waitForTimeout(10000);
+
     await tile.click({ force: true });
+
     console.log(`✅ Clicked tile ${index}`);
+
     await page.waitForTimeout(100);
-    const inner = await tile.waitForSelector('.memory-grid-item-inner', { timeout: 7000 }).catch(() => null);
+
+    const inner = await tile
+      .waitForSelector(
+        '.memory-grid-item-inner',
+        { timeout: 7000 }
+      )
+      .catch(() => null);
+
     if (!inner) return null;
-    const className = await inner.getAttribute('class');
-    const match = className.match(/memory-grid-item-inner-(\d+)/);
+
+    const className =
+      await inner.getAttribute('class');
+
+    const match =
+      className.match(/memory-grid-item-inner-(\d+)/);
+
     return match ? match[1] : null;
   }
+
+
+  // ============================================================
+  // NOMINAL TILE CLICK
+  // ============================================================
+  //
+  // Used ONLY when a Phase 1 pair fails to match.
+  //
+  // It:
+  //   1. Gets the same tile
+  //   2. Waits 10 seconds
+  //   3. Clicks it
+  //
+  // It DOES NOT:
+  //   - read the tile ID
+  //   - update clickedOnce
+  //   - update matched
+  //   - update known
+  //
+  // Therefore these clicks have no effect on the script's
+  // bookkeeping or decision-making.
+  // ============================================================
+
+  async function nominalClickTile(index) {
+    const tiles = await getAllTiles();
+    const tile = tiles[index];
+
+    if (!tile) return;
+
+    console.log(
+      `🕒 Waiting 10s before nominal click on tile ${index}...`
+    );
+
+    await page.waitForTimeout(10000);
+
+    await tile.click({ force: true });
+
+    console.log(
+      `🔄 Nominally clicked tile ${index}`
+    );
+  }
+
+
+  // ============================================================
+  // CHECK WHETHER A TILE IS MATCHED
+  // ============================================================
 
   async function isTileMatched(index) {
     const tiles = await getAllTiles();
     const tile = tiles[index];
+
     if (!tile) return false;
-    const className = await tile.getAttribute('class');
-    return className.includes('opened') || className.includes('matched') || className.includes('disable-on-match');
+
+    const className =
+      await tile.getAttribute('class');
+
+    return (
+      className.includes('opened') ||
+      className.includes('matched') ||
+      className.includes('disable-on-match')
+    );
   }
 
-  const totalTiles = (await getAllTiles()).length;
-  console.log(`🎯 Detected ${totalTiles} real tiles.`);
+
+  // ============================================================
+  // INITIAL SETUP
+  // ============================================================
+
+  const totalTiles =
+    (await getAllTiles()).length;
+
+  console.log(
+    `🎯 Detected ${totalTiles} real tiles.`
+  );
+
   const clickedOnce = new Set();
   const matched = new Set();
   const known = {};
 
-  console.log("🧠 Phase 1: Discovering inner numbers...");
+
+  // ============================================================
+  // PHASE 1
+  // DISCOVERING INNER NUMBERS
+  // ============================================================
+
+  console.log(
+    "🧠 Phase 1: Discovering inner numbers..."
+  );
 
   while (clickedOnce.size < totalTiles) {
+
     let firstIndex = null;
+
+    // ----------------------------------------------------------
+    // Find the first tile that hasn't been clicked yet.
+    // ----------------------------------------------------------
+
     for (let i = 0; i < totalTiles; i++) {
-      if (!clickedOnce.has(i) && !matched.has(i)) {
+
+      if (
+        !clickedOnce.has(i) &&
+        !matched.has(i)
+      ) {
         firstIndex = i;
         break;
       }
     }
+
     if (firstIndex === null) break;
 
-    const firstId = await clickTileAndGetId(firstIndex);
+
+    // ----------------------------------------------------------
+    // Click first tile and discover its ID.
+    // ----------------------------------------------------------
+
+    const firstId =
+      await clickTileAndGetId(firstIndex);
+
     clickedOnce.add(firstIndex);
+
     if (!firstId) continue;
 
-    const knownMatch = (known[firstId] || []).find(i => i !== firstIndex && !matched.has(i));
-    let secondIndex = knownMatch != null
-      ? knownMatch
-      : Array.from({ length: totalTiles }, (_, i) => i).find(i => !clickedOnce.has(i) && !matched.has(i) && i !== firstIndex);
+
+    // ----------------------------------------------------------
+    // See if we already know another tile with this ID.
+    // ----------------------------------------------------------
+
+    const knownMatch =
+      (known[firstId] || []).find(
+        i =>
+          i !== firstIndex &&
+          !matched.has(i)
+      );
+
+
+    // ----------------------------------------------------------
+    // If we already know the matching tile, use it.
+    //
+    // Otherwise choose another undiscovered tile.
+    // ----------------------------------------------------------
+
+    let secondIndex =
+      knownMatch != null
+        ? knownMatch
+        : Array.from(
+            { length: totalTiles },
+            (_, i) => i
+          ).find(
+            i =>
+              !clickedOnce.has(i) &&
+              !matched.has(i) &&
+              i !== firstIndex
+          );
+
 
     if (secondIndex == null) continue;
 
-    const secondId = await clickTileAndGetId(secondIndex);
+
+    // ----------------------------------------------------------
+    // Click second tile and discover its ID.
+    // ----------------------------------------------------------
+
+    const secondId =
+      await clickTileAndGetId(secondIndex);
+
     clickedOnce.add(secondIndex);
+
     if (!secondId) continue;
 
-    known[firstId] = [...(known[firstId] || []), firstIndex];
-    known[secondId] = [...(known[secondId] || []), secondIndex];
+
+    // ----------------------------------------------------------
+    // Store what we learned.
+    // ----------------------------------------------------------
+
+    known[firstId] = [
+      ...(known[firstId] || []),
+      firstIndex
+    ];
+
+    known[secondId] = [
+      ...(known[secondId] || []),
+      secondIndex
+    ];
+
+
+    // ----------------------------------------------------------
+    // Check whether the two tiles actually matched.
+    // ----------------------------------------------------------
 
     await page.waitForTimeout(500);
-    const m1 = await isTileMatched(firstIndex);
-    const m2 = await isTileMatched(secondIndex);
+
+    const m1 =
+      await isTileMatched(firstIndex);
+
+    const m2 =
+      await isTileMatched(secondIndex);
+
+
+    // ==========================================================
+    // SUCCESSFUL MATCH
+    // ==========================================================
+
     if (m1 && m2) {
+
       matched.add(firstIndex);
       matched.add(secondIndex);
-      console.log(`✅ MATCHED: ${firstIndex} & ${secondIndex}`);
-    } else {
-      console.log(`❌ Not a match: ${firstIndex} & ${secondIndex}`);
+
+      console.log(
+        `✅ MATCHED: ${firstIndex} & ${secondIndex}`
+      );
+
+    }
+
+
+    // ==========================================================
+    // FAILED MATCH
+    // ==========================================================
+
+    else {
+
+      console.log(
+        `❌ Not a match: ${firstIndex} & ${secondIndex}`
+      );
+
+
+      // --------------------------------------------------------
+      // NOMINAL RE-CLICKS
+      //
+      // Re-click the exact same two tiles once each.
+      //
+      // These clicks:
+      //   - wait 10 seconds each
+      //   - click the tile
+      //   - DO NOT read the ID
+      //   - DO NOT modify clickedOnce
+      //   - DO NOT modify matched
+      //   - DO NOT modify known
+      //
+      // After these two clicks, execution continues exactly
+      // where the original code would have continued.
+      // --------------------------------------------------------
+
+      await nominalClickTile(firstIndex);
+      await nominalClickTile(secondIndex);
+
+      console.log(
+        "✅ Nominal re-clicks complete. Continuing normally."
+      );
     }
   }
 
-  console.log("🧠 Phase 2: Matching all known pairs...");
-  for (const [innerId, indices] of Object.entries(known)) {
-    const unmatched = indices.filter(i => !matched.has(i));
-    for (let i = 0; i < unmatched.length; i += 2) {
+
+  // ============================================================
+  // PHASE 2
+  // MATCHING ALL KNOWN PAIRS
+  // ============================================================
+
+  console.log(
+    "🧠 Phase 2: Matching all known pairs..."
+  );
+
+  for (
+    const [innerId, indices]
+    of Object.entries(known)
+  ) {
+
+    const unmatched =
+      indices.filter(
+        i => !matched.has(i)
+      );
+
+
+    for (
+      let i = 0;
+      i < unmatched.length;
+      i += 2
+    ) {
+
       const a = unmatched[i];
       const b = unmatched[i + 1];
-      if (a == null || b == null) continue;
+
+      if (
+        a == null ||
+        b == null
+      ) {
+        continue;
+      }
+
+
       await clickTileAndGetId(a);
       await clickTileAndGetId(b);
+
       await page.waitForTimeout(500);
-      const m1 = await isTileMatched(a);
-      const m2 = await isTileMatched(b);
+
+
+      const m1 =
+        await isTileMatched(a);
+
+      const m2 =
+        await isTileMatched(b);
+
+
       if (m1 && m2) {
+
         matched.add(a);
         matched.add(b);
-        console.log(`✅ MATCHED in Phase 2: ${a} & ${b}`);
+
+        console.log(
+          `✅ MATCHED in Phase 2: ${a} & ${b}`
+        );
+
       } else {
-        console.log(`❌ Phase 2 mismatch: ${a} & ${b}`);
+
+        console.log(
+          `❌ Phase 2 mismatch: ${a} & ${b}`
+        );
       }
     }
   }
 
+
+  // ============================================================
+  // FINAL RESULT
+  // ============================================================
+
   if (matched.size === totalTiles) {
-    console.log("🎉 All pairs matched!");
+
+    console.log(
+      "🎉 All pairs matched!"
+    );
+
   } else {
-    console.log(`⚠️ Game incomplete: Matched ${matched.size}/${totalTiles}`);
+
+    console.log(
+      `⚠️ Game incomplete: Matched ${matched.size}/${totalTiles}`
+    );
   }
 };
-
-
-
-
