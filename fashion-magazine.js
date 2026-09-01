@@ -1,4 +1,4 @@
-// fashion-magazine.js..
+// fashion-magazine.js...
 
 module.exports = async function runFashionMagazine(page) {
   const eventUrl = process.env.LP_FASHION_MAGAZINE_URL;
