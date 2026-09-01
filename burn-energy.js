@@ -6,7 +6,7 @@ module.exports = async function runBurnEnergy(page) {
   //
   // This function checks how many Beauty Pageant tickets we have.
   //
-  // The script wants to KEEP 10 tickets in storage.
+  // The script wants to KEEP 10 tickets in storage..
   //
   // Anything ABOVE 10 is spent by sending the game's own
   // "competeInDuel" internal request.
