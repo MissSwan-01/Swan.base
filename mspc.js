@@ -88,7 +88,6 @@ const scripts = [
   }
 
   // 🎁 DAILY REWARD COLLECTION
-  REMOVE THIS IF U WANT LATER
   if (loginSuccess) {
     console.log(DIVIDER);
     console.log("🎁 Starting daily reward collection...");
