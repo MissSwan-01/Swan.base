@@ -3,7 +3,7 @@
 // ================================================================
 //
 // Logic unchanged.
-// Console output reduced to only important information.
+// Console output reduced to only important information..
 // ================================================================
 
 
