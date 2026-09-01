@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { chromium } = require('playwright');
 
-// ⬇️ Import all sub-scripts (exported as functions)..
+// ⬇️ Import all sub-scripts (exported as functions).
 const DIVIDER = '────────────────────────────────────────────────────────────────────────────────';
 const runBurnEnergy = require('./burn-energy.js');
 const runClaimRewards = require('./claim-BPrewards.js');
