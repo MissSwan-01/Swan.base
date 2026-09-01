@@ -1,4 +1,4 @@
-// parties.js..
+// parties.js.
 
 module.exports = async function runParties(page) {
   console.log("\n🎉 Starting Parties Script");
