@@ -2,7 +2,7 @@
  * daily-tasks.js
  * Collects Type 1 (7 daily tasks) and Type 2 (3 daily chests)
  * Simplified: Type 2 chests are constants, Phase 1B removed
- * Fully Playwright-compatible..
+ * Fully Playwright-compatible...
  */
 
 module.exports = async function runDailyTasks(page) {
