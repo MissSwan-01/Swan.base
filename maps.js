@@ -1,4 +1,4 @@
-// maps.js..
+// maps.js.
 
 module.exports = async function runMapsEvent(page) {
   const mapsUrl = process.env.LP_MAPS_URL;
