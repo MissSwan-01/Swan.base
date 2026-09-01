@@ -7,7 +7,7 @@ module.exports = async function runPetTraining(page) {
     });
     await page.waitForTimeout(5000);
 
-    // 🔍 STEP 1: Find active pet
+    // 🔍 STEP 1: Find active pet..
     const activePet = await page.$('.pets-cars-wrapper.active-tab');
     if (!activePet) {
       console.log("❌ No active pet found. Skipping pet training.");
