@@ -1,7 +1,7 @@
 //VERSION 1–
 // solitaire.js
 // Safe solitaire automation: 1 free click ONLY if cooldown is over
-// Playwright-correct version
+// Playwright-correct version..
 
 module.exports = async function runSolitaireEvent(page) {
   const solUrl = process.env.LP_SOLITAIRE_URL;
