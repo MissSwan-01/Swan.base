@@ -81,27 +81,6 @@ module.exports = async function runMemoryEvent(page) {
   }
 
 
-  // ============================================================
-  // NOMINAL TILE CLICK
-  // ============================================================
-  //
-  // Used ONLY when a Phase 1 pair fails to match.
-  //
-  // It:
-  //   1. Gets the same tile
-  //   2. Waits 10 seconds
-  //   3. Clicks it
-  //
-  // It DOES NOT:
-  //   - read the tile ID
-  //   - update clickedOnce
-  //   - update matched
-  //   - update known
-  //
-  // Therefore these clicks have no effect on the script's
-  // bookkeeping or decision-making.
-  // ============================================================
-
   async function nominalClickTile(index) {
     const tiles = await getAllTiles();
     const tile = tiles[index];
