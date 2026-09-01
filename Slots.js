@@ -25,7 +25,7 @@ module.exports = async function runSlotsEvent(page) {
     }
 
     // 🎯 Check tries
-    const tries = Math.max(0, (await page.$$eval('.currency-circle-full', spans => spans.length))-1);
+    const tries = Math.max(0, (await page.$$eval('.currency-circle-full', spans => spans.length)));
     if (tries === 0) {
       console.log("🎯 No tries left. Exiting.");
       break;
