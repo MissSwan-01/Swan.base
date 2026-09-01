@@ -1,4 +1,4 @@
-// claim-rewards.js..
+// claim-rewards.js.
 //
 // ================================================================
 // 💰 CLAIM ALL BEAUTY PAGEANT DUEL REWARDS
