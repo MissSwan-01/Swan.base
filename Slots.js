@@ -7,7 +7,7 @@ module.exports = async function runSlotsEvent(page) {
   await page.goto(slotsUrl, { waitUntil: 'domcontentloaded' });
 
   // 🔄 Refresh the page 3 times
-  for (let i = 1; i <= 3; i++) {
+  for (let i = 1; i <= 1; i++) {
     console.log(`🔄 Refreshing slots page (Attempt ${i}/3)...`);
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(30000); // Wait 30 seconds
@@ -25,7 +25,7 @@ module.exports = async function runSlotsEvent(page) {
     }
 
     // 🎯 Check tries
-    const tries = Math.max(0, (await page.$$eval('.currency-circle-full', spans => spans.length)) - 1);
+    const tries = Math.max(0, (await page.$$eval('.currency-circle-full', spans => spans.length)));
     if (tries === 0) {
       console.log("🎯 No tries left. Exiting.");
       break;
