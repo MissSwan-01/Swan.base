@@ -9,7 +9,7 @@ module.exports = async function runGuildShow(page) {
   // Give map time to render
   await page.waitForTimeout(3000);
 
-  // 1️⃣ Collect pending positions (only ones still visible in DOM)
+  // 1️⃣ Collect pending positions (only ones still visible in DOM)..
   const pendingPositions = await page.$$eval(
     'map#Map area[rel]',
     areas => areas.map(a => a.getAttribute('rel'))
