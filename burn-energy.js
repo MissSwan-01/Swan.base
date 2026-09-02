@@ -164,7 +164,7 @@ module.exports = async function runBurnEnergy(page) {
   let tickets = await getTicketCount();
   console.log(`🎟️ You have ${tickets} tickets.`);
 
-  let ticketsToUse = tickets - 90;
+  let ticketsToUse = tickets - 0;
 
   if (ticketsToUse > 0) {
     console.log(`🎯 Using ${ticketsToUse} ticket(s)...`);
