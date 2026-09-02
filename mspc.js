@@ -24,7 +24,7 @@ const runDuelFP = require('./duel-fp.js');
 
 const scripts = [
   { name: 'Burn Energy', fn: runBurnEnergy, alwaysRun: true },
-  { name: 'Claim BP Duel Rewards', fn: runClaimRewards, alwaysRun: false }, //its equally distributing stats, bella doesnt need it
+  { name: 'Claim BP Duel Rewards', fn: runClaimRewards, alwaysRun: true }, 
   /*{ name: 'Fashion Magazine', fn: runFashionMagazine, envKey: 'LP_FASHION_MAGAZINE_URL' },
   { name: 'Tele Event', fn: runTeleportEvent, envKey: 'LP_TELEPORT_URL' },
   { name: 'Solitaire Event', fn: runSolitaireEvent, envKey: 'LP_SOLITAIRE_URL' },
