@@ -62,7 +62,6 @@ module.exports = async function runApartmentAndGifts(page) {
     throw error;
 
   }
-} // remove this if u also want gifts auto activation
 
 
   // ============================================================== 
