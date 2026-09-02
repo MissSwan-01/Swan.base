@@ -71,7 +71,7 @@ module.exports = async function runApartmentAndGifts(page) {
   // CHECK WHETHER A FLASHBACK EVENT IS ALREADY ACTIVE
   // ==============================================================
 
- /* try {
+ try {
 
     await page.goto(
       'https://v3.g.ladypopular.com/guild.php',
@@ -355,4 +355,4 @@ module.exports = async function runApartmentAndGifts(page) {
   // FINISHED
   // ==============================================================
 
-}; */
+};
