@@ -20,6 +20,7 @@ const runBridesmaids = require('./bridesmaids.js');
 const runParties = require('./parties.js');
 const runApartmentAndGifts = require('./apartment-gifts.js');
 const runCars = require('./cars.js');
+const runDuelFP = require('./duel-fp');
 
 const scripts = [
   { name: 'Burn Energy', fn: runBurnEnergy, alwaysRun: true },
@@ -30,8 +31,8 @@ const scripts = [
   { name: 'Maps Event', fn: runMapsEvent, envKey: 'LP_MAPS_URL' },
   { name: 'Slots Event', fn: runSlotsEvent, envKey: 'LP_SLOTS_URL' },
   { name: 'Parties', fn: runParties, alwaysRun: true},
-  { name: 'Memory Event', fn: runMemoryEvent, envKey: 'LP_MEMORY_URL' },*/
-  { name: 'Furniture Script', fn: runFurnitureScript, alwaysRun: true },
+  { name: 'Memory Event', fn: runMemoryEvent, envKey: 'LP_MEMORY_URL' },
+  { name: 'Furniture Script', fn: runFurnitureScript, alwaysRun: true },*/
   { name: 'Daily Tasks', fn: runDailyTasks, alwaysRun: true },
   { name: 'Boyfriend Kiss', fn: runBoyfriendKiss, alwaysRun: true },
   { name: 'Guild Show', fn: runGuildShow, alwaysRun: true },
@@ -39,6 +40,7 @@ const scripts = [
   { name: 'Bridesmaids Tasks', fn: runBridesmaids, alwaysRun: false },*/
   { name: 'Apartment + Gifts', fn: runApartmentAndGifts, alwaysRun: true },
   { name: 'Activate Cars', fn: runCars, alwaysRun: true },
+  { name: 'Raise stats', fn: runDuelFP, alwaysRun: true },
 ];
 
 (async () => {
