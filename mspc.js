@@ -20,7 +20,7 @@ const runBridesmaids = require('./bridesmaids.js');
 const runParties = require('./parties.js');
 const runApartmentAndGifts = require('./apartment-gifts.js');
 const runCars = require('./cars.js');
-const runDuelFP = require('./duel-fp');
+const runDuelFP = require('./duel-fp.js');
 
 const scripts = [
   { name: 'Burn Energy', fn: runBurnEnergy, alwaysRun: true },
